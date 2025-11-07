@@ -9,6 +9,9 @@ on:
       - 'nodemon.sh'
       - 'README.md'
 
+permissions:
+  contents: write
+
 jobs:
   update-tag:
     runs-on: ubuntu-latest

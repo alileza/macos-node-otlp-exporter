@@ -10,6 +10,9 @@ on:
       - 'README.md'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -69,12 +72,10 @@ jobs:
       
       - name: Create Release
         id: create-release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.version-bump.outputs.new-version }}
-          release_name: ${{ steps.version-bump.outputs.new-version }}
+          name: ${{ steps.version-bump.outputs.new-version }}
           body: |
             ## Changes
             
@@ -101,15 +102,20 @@ jobs:
       
       - name: Update major version tag
         run: |
-          MAJOR_VERSION="v${{ steps.get-version.outputs.major }}"
           NEW_VERSION="${{ steps.version-bump.outputs.new-version }}"
+          MAJOR=$(echo "$NEW_VERSION" | cut -d. -f1)
+          MAJOR_VERSION="${MAJOR}"
+          
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           
           # Delete existing major version tag if it exists
           git tag -d "$MAJOR_VERSION" 2>/dev/null || true
           git push origin ":refs/tags/$MAJOR_VERSION" 2>/dev/null || true
           
-          # Create new major version tag pointing to the same commit as the new version
-          git tag "$MAJOR_VERSION" "$NEW_VERSION"
+          # Create new major version tag pointing to current commit
+          git tag "$MAJOR_VERSION"
           git push origin "$MAJOR_VERSION"
           
           echo "✅ Updated $MAJOR_VERSION to point to $NEW_VERSION"

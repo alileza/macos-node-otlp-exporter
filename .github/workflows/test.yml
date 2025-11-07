@@ -1,0 +1,38 @@
+name: Test Basic Functionality
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test Action Structure
+        run: |
+          echo "Testing action structure..."
+          
+          # Check required files exist
+          if [[ ! -f "action.yml" ]]; then
+            echo "❌ Missing action.yml"
+            exit 1
+          fi
+          
+          if [[ ! -f "nodemon.sh" ]]; then
+            echo "❌ Missing nodemon.sh"
+            exit 1
+          fi
+          
+          # Check nodemon.sh is executable
+          if [[ ! -x "nodemon.sh" ]]; then
+            echo "❌ nodemon.sh is not executable"
+            exit 1
+          fi
+          
+          echo "✅ All required files present"
+          echo "✅ Basic structure validation passed"
