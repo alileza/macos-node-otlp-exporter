@@ -1,0 +1,128 @@
+name: Release and Tag
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'action.yml'
+      - 'nodemon.sh'
+      - 'README.md'
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get current version
+        id: get-version
+        run: |
+          # Try to get the latest tag, default to v0.0.0 if none exists
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest-tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          
+          # Parse version numbers
+          VERSION=${LATEST_TAG#v}
+          IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
+          MAJOR=${VERSION_PARTS[0]:-0}
+          MINOR=${VERSION_PARTS[1]:-0}
+          PATCH=${VERSION_PARTS[2]:-0}
+          
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "minor=$MINOR" >> $GITHUB_OUTPUT  
+          echo "patch=$PATCH" >> $GITHUB_OUTPUT
+      
+      - name: Determine version bump
+        id: version-bump
+        run: |
+          # Check commit messages for version bump indicators
+          COMMITS=$(git log ${{ steps.get-version.outputs.latest-tag }}..HEAD --pretty=format:"%s" || git log --pretty=format:"%s" -10)
+          
+          MAJOR=${{ steps.get-version.outputs.major }}
+          MINOR=${{ steps.get-version.outputs.minor }}
+          PATCH=${{ steps.get-version.outputs.patch }}
+          
+          if echo "$COMMITS" | grep -q -i "BREAKING\|breaking change\|major:"; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+            BUMP_TYPE="major"
+          elif echo "$COMMITS" | grep -q -i "feat:\|feature:\|minor:"; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+            BUMP_TYPE="minor"
+          else
+            PATCH=$((PATCH + 1))
+            BUMP_TYPE="patch"
+          fi
+          
+          NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "new-version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "bump-type=$BUMP_TYPE" >> $GITHUB_OUTPUT
+          echo "Version bump: ${{ steps.get-version.outputs.latest-tag }} → $NEW_VERSION ($BUMP_TYPE)"
+      
+      - name: Create Release
+        id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version-bump.outputs.new-version }}
+          release_name: ${{ steps.version-bump.outputs.new-version }}
+          body: |
+            ## Changes
+            
+            Auto-generated release for macOS Node OTLP Exporter.
+            
+            ### What's Changed
+            - Updated action configuration and script
+            - See commit history for detailed changes
+            
+            ### Usage
+            ```yaml
+            - uses: ${{ github.repository }}@${{ steps.version-bump.outputs.new-version }}
+              with:
+                otlp_endpoint: 'https://otlp.your-domain.com:4318'
+                otlp_auth: ${{ secrets.OTLP_AUTH }}
+            ```
+            
+            Or use the major version tag:
+            ```yaml
+            - uses: ${{ github.repository }}@v${{ steps.get-version.outputs.major }}
+            ```
+          draft: false
+          prerelease: false
+      
+      - name: Update major version tag
+        run: |
+          MAJOR_VERSION="v${{ steps.get-version.outputs.major }}"
+          NEW_VERSION="${{ steps.version-bump.outputs.new-version }}"
+          
+          # Delete existing major version tag if it exists
+          git tag -d "$MAJOR_VERSION" 2>/dev/null || true
+          git push origin ":refs/tags/$MAJOR_VERSION" 2>/dev/null || true
+          
+          # Create new major version tag pointing to the same commit as the new version
+          git tag "$MAJOR_VERSION" "$NEW_VERSION"
+          git push origin "$MAJOR_VERSION"
+          
+          echo "✅ Updated $MAJOR_VERSION to point to $NEW_VERSION"
+      
+      - name: Summary
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Previous version**: ${{ steps.get-version.outputs.latest-tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **New version**: ${{ steps.version-bump.outputs.new-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bump type**: ${{ steps.version-bump.outputs.bump-type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Major version tag**: v${{ steps.get-version.outputs.major }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Usage" >> $GITHUB_STEP_SUMMARY
+          echo '```yaml' >> $GITHUB_STEP_SUMMARY
+          echo "- uses: ${{ github.repository }}@v${{ steps.get-version.outputs.major }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

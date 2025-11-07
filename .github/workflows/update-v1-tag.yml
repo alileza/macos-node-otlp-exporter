@@ -1,0 +1,45 @@
+name: Update v1 Tag
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'action.yml'
+      - 'nodemon.sh'
+      - 'README.md'
+
+jobs:
+  update-tag:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Update v1 tag
+        run: |
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Delete existing v1 tag locally and remotely
+          git tag -d v1 2>/dev/null || true
+          git push origin :refs/tags/v1 2>/dev/null || true
+          
+          # Create new v1 tag pointing to current commit
+          git tag v1
+          git push origin v1
+          
+          echo "✅ Updated v1 tag to point to commit: $(git rev-parse HEAD)"
+          echo "## Tag Updated" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag**: v1" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`$(git rev-parse --short HEAD)\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Message**: $(git log -1 --pretty=format:'%s')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Users can now reference the latest version with:" >> $GITHUB_STEP_SUMMARY
+          echo '```yaml' >> $GITHUB_STEP_SUMMARY
+          echo "- uses: ${{ github.repository }}@v1" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

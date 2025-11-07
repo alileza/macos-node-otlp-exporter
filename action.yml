@@ -1,0 +1,77 @@
+name: 'macOS Node OTLP Exporter'
+description: 'Install and configure node_exporter and otelcol-contrib on macOS for OTLP metrics export'
+author: 'Ali Reza Yahya'
+
+branding:
+  icon: 'activity'
+  color: 'orange'
+
+inputs:
+  otlp_endpoint:
+    description: 'OTLP endpoint URL'
+    required: false
+    default: 'https://otlp.example.com:4318'
+  
+  otlp_auth:
+    description: 'Base64 encoded basic auth credentials (user:pass)'
+    required: false
+    default: 'dXNlcjpwYXNz'
+  
+  node_exporter_version:
+    description: 'node_exporter version to install'
+    required: false
+    default: '1.10.2'
+  
+  otelcol_version:
+    description: 'otelcol-contrib version to install'
+    required: false
+    default: '0.139.0'
+  
+  service_name:
+    description: 'Service name for OTEL resource attributes'
+    required: false
+    default: 'node-exporter'
+  
+  host_type:
+    description: 'Host type for OTEL resource attributes'
+    required: false
+    default: 'macos'
+  
+  custom_labels:
+    description: 'Additional custom labels (comma-separated key=value pairs)'
+    required: false
+    default: ''
+  
+  command:
+    description: 'Command to run: install, status, stop, logs'
+    required: false
+    default: 'install'
+
+outputs:
+  status:
+    description: 'Status of the operation'
+    value: ${{ steps.run-action.outputs.status }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run macOS Node OTLP Exporter
+      id: run-action
+      shell: bash
+      run: |
+        export OTLP_ENDPOINT="${{ inputs.otlp_endpoint }}"
+        export OTLP_BASIC_B64="${{ inputs.otlp_auth }}"
+        export NODE_EXPORTER_VERSION="${{ inputs.node_exporter_version }}"
+        export OTELCOL_CONTRIB_VERSION="${{ inputs.otelcol_version }}"
+        export SERVICE_NAME="${{ inputs.service_name }}"
+        export HOST_TYPE="${{ inputs.host_type }}"
+        export CUSTOM_LABELS="${{ inputs.custom_labels }}"
+        
+        # Make script executable and run
+        chmod +x "${{ github.action_path }}/nodemon.sh"
+        if "${{ github.action_path }}/nodemon.sh" "${{ inputs.command }}"; then
+          echo "status=success" >> $GITHUB_OUTPUT
+        else
+          echo "status=failed" >> $GITHUB_OUTPUT
+          exit 1
+        fi

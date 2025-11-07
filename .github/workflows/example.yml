@@ -1,0 +1,58 @@
+name: Example Usage
+
+on: 
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  test-metrics-export:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Install Node OTLP Exporter
+        uses: ./  # In a real workflow, use: your-org/macos-node-otlp-exporter@v1
+        with:
+          otlp_endpoint: 'https://otlp.example.com:4318'
+          otlp_auth: 'dXNlcjpwYXNzd29yZA=='  # base64("user:password")
+          service_name: 'github-ci'
+          host_type: 'github-macos'
+          custom_labels: 'environment=ci,workflow=${{ github.workflow }},run_id=${{ github.run_id }}'
+          command: 'install'
+      
+      - name: Check Services Status
+        uses: ./  # In a real workflow, use: your-org/macos-node-otlp-exporter@v1
+        with:
+          command: 'status'
+      
+      - name: Verify node_exporter is working
+        run: |
+          echo "Testing node_exporter endpoint..."
+          curl -f http://localhost:9100/metrics | head -10
+          echo "✅ node_exporter is working"
+      
+      - name: Simulate workload
+        run: |
+          echo "Running simulated workload to generate metrics..."
+          # Simulate some CPU/memory activity
+          for i in {1..10}; do
+            echo "Task $i/10"
+            sleep 2
+          done
+          echo "✅ Workload completed"
+      
+      - name: View Recent Logs
+        if: always()
+        uses: ./  # In a real workflow, use: your-org/macos-node-otlp-exporter@v1
+        with:
+          command: 'logs'
+        timeout-minutes: 1
+      
+      - name: Stop Services
+        if: always()
+        uses: ./  # In a real workflow, use: your-org/macos-node-otlp-exporter@v1
+        with:
+          command: 'stop'
