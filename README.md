@@ -2,6 +2,15 @@
 
 A GitHub Action that installs and configures `node_exporter` and `otelcol-contrib` on macOS runners for OTLP metrics export.
 
+## Quick Start
+
+```yaml
+- uses: alileza/macos-node-otlp-exporter@v1
+  with:
+    otlp_endpoint: 'https://otlp.your-domain.com:4318'
+    otlp_auth: ${{ secrets.OTLP_AUTH }}
+```
+
 ## Features
 
 - ✅ **No Homebrew dependency** - Downloads binaries directly from GitHub releases
@@ -23,7 +32,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Setup Node OTLP Exporter
-        uses: your-org/macos-node-otlp-exporter@v1
+        uses: alileza/macos-node-otlp-exporter@v1
         with:
           otlp_endpoint: 'https://otlp.your-domain.com:4318'
           otlp_auth: 'dXNlcjpwYXNzd29yZA=='  # base64("user:password")
@@ -40,7 +49,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Setup Node OTLP Exporter
-        uses: your-org/macos-node-otlp-exporter@v1
+        uses: alileza/macos-node-otlp-exporter@v1
         with:
           otlp_endpoint: 'https://otlp.your-domain.com:4318'
           otlp_auth: ${{ secrets.OTLP_AUTH }}
@@ -52,7 +61,7 @@ jobs:
           command: 'install'
       
       - name: Check Status
-        uses: your-org/macos-node-otlp-exporter@v1
+        uses: alileza/macos-node-otlp-exporter@v1
         with:
           command: 'status'
       
@@ -64,7 +73,7 @@ jobs:
       
       - name: Stop Services
         if: always()
-        uses: your-org/macos-node-otlp-exporter@v1
+        uses: alileza/macos-node-otlp-exporter@v1
         with:
           command: 'stop'
 ```

@@ -14,7 +14,7 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Install Node OTLP Exporter
-        uses: ./  # In a real workflow, use: your-org/macos-node-otlp-exporter@v1
+        uses: ./  # In a real workflow, use: alileza/macos-node-otlp-exporter@v1
         with:
           otlp_endpoint: 'https://otlp.example.com:4318'
           otlp_auth: 'dXNlcjpwYXNzd29yZA=='  # base64("user:password")
@@ -24,7 +24,7 @@ jobs:
           command: 'install'
       
       - name: Check Services Status
-        uses: ./  # In a real workflow, use: your-org/macos-node-otlp-exporter@v1
+        uses: ./  # In a real workflow, use: alileza/macos-node-otlp-exporter@v1
         with:
           command: 'status'
       
@@ -46,13 +46,13 @@ jobs:
       
       - name: View Recent Logs
         if: always()
-        uses: ./  # In a real workflow, use: your-org/macos-node-otlp-exporter@v1
+        uses: ./  # In a real workflow, use: alileza/macos-node-otlp-exporter@v1
         with:
           command: 'logs'
         timeout-minutes: 1
       
       - name: Stop Services
         if: always()
-        uses: ./  # In a real workflow, use: your-org/macos-node-otlp-exporter@v1
+        uses: ./  # In a real workflow, use: alileza/macos-node-otlp-exporter@v1
         with:
           command: 'stop'
